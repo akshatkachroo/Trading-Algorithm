@@ -11,18 +11,12 @@ class Logger:
         self.logs += sep.join(map(str, objects)) + end
 
     def flush(self, state: TradingState, orders: Dict[Symbol, List[Order]]) -> None:
-        logs = self.logs
-        if logs.endswith("\n"):
-            logs = logs[:-1]
-
         print(json.dumps({
             "state": state,
             "orders": orders,
-            "logs": logs,
+            "logs": self.logs,
         }, cls=ProsperityEncoder, separators=(",", ":"), sort_keys=True))
 
-        self.state = None
-        self.orders = {}
         self.logs = ""
 
 logger = Logger()
@@ -98,7 +92,7 @@ class Trader:
                         orders.append(Order(product, fair_value - 0.5 , -1))
                         orders.append(Order(product, fair_value + 0.5, 1))
                     # Add the list of Orders to the method output dict with the key being the product name
-                result[product] = orders
+                #result[product] = orders
 
             elif product == 'BANANAS':
                 order_depth: OrderDepth = state.order_depths[product]
@@ -137,9 +131,9 @@ class Trader:
                         orders.append(Order(product, fair_value - 0.5 , -1))
                         orders.append(Order(product, fair_value + 0.5, 1))
 
-                result[product] = orders
+                #result[product] = orders
 
-        logger.flush(state, orders)
+        logger.flush(state, result)
         return result
 
     # Return the method output dict
