@@ -5,6 +5,9 @@ import pandas as pd
 
 candlestick = int
 
+first = {}
+hist_prices = pd.DataFrame(first)
+
 class Logger:
     def __init__(self) -> None:
         self.logs = ""
@@ -65,18 +68,13 @@ class Trader:
                 price = (min(bids) + max(asks))/2
 
                 print(state.timestamp)
-
-                if state.timestamp == 0:
-                    first = {'price': price, 'candlestick': 1, 'candlestick_max': price, 'candlestick_min': price}
-                    hist_prices = pd.DataFrame(first)
                 
-                else:
-                    candlestick = int (state.timestamp/30)+1
-                    candlestick_max = hist_prices[hist_prices['candlestick'] == candlestick].max()
-                    candlestick_min = hist_prices[hist_prices['candlestick'] == candlestick].min()
-                    candlestick_max, candlestick_min = price
+                candlestick = int (state.timestamp/30)+1
+                candlestick_max = hist_prices[hist_prices['candlestick'] == candlestick].max()
+                candlestick_min = hist_prices[hist_prices['candlestick'] == candlestick].min()
+                candlestick_max, candlestick_min = price
 
-                    hist_prices.loc[len(hist_prices)] = [price, candlestick, candlestick_max, candlestick_min]
+                hist_prices.loc[len(hist_prices)] = [price, candlestick, candlestick_max, candlestick_min]
 
                 hist_prices.loc[hist_prices['candlestick'] == candlestick, 'candlestick_max'] = candlestick_max
                 hist_prices.loc[hist_prices['candlestick'] == candlestick, 'candlestick_min'] = candlestick_min
