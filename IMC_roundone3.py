@@ -3,10 +3,7 @@ from datamodel import OrderDepth, TradingState, Order, ProsperityEncoder, Symbol
 import json
 import pandas as pd
 
-candlestick = int
-
-first = {}
-hist_prices = pd.DataFrame(first)
+hist_prices = pd.DataFrame(columns=['price', 'candlestick', 'candlestick_max', 'candlestick_min', 'avgmax_at_buy', 'avgmin_at_buy'])
 
 class Logger:
     def __init__(self) -> None:
@@ -66,25 +63,38 @@ class Trader:
                 asks = order_depth.sell_orders.keys()
 
                 price = (min(bids) + max(asks))/2
-
-                print(state.timestamp)
                 
-                candlestick = int (state.timestamp/30)+1
-                candlestick_max = hist_prices[hist_prices['candlestick'] == candlestick].max()
-                candlestick_min = hist_prices[hist_prices['candlestick'] == candlestick].min()
-                candlestick_max, candlestick_min = price
+                candlestick = (state.timestamp/30)+1
+                candlestick_df = hist_prices[hist_prices['candlestick'] == candlestick]
+                candlestick_max = candlestick_df['price'].max()
+                candlestick_min = candlestick_df['price'].min()
 
-                hist_prices.loc[len(hist_prices)] = [price, candlestick, candlestick_max, candlestick_min]
+                hist_prices.loc[len(hist_prices)] = [price, candlestick, candlestick_max, candlestick_min, 1000000000000, 0]
 
                 hist_prices.loc[hist_prices['candlestick'] == candlestick, 'candlestick_max'] = candlestick_max
                 hist_prices.loc[hist_prices['candlestick'] == candlestick, 'candlestick_min'] = candlestick_min
 
-                avgmax_last_20_sticks = hist_prices.iloc['candlestick_max', -600:].mean()
-                avgmin_last_20_sticks = hist_prices.iloc['candlestick_min', -600:].mean()
+                avgmax_last_20_sticks = hist_prices.loc[-600:, 'candlestick_max'].mean()
+                avgmin_last_20_sticks = hist_prices.loc[-600:, 'candlestick_min'].mean()
 
-                #if price passes above avgmax_last_20_sticks, buy all
-                #if price drops below avgmin_last_20_sticks, sell all
-                #if price passes above avgmax_last_20_sticks + [(avgmax-avgmin)*1.5], sell all
+                last_price = hist_prices.iloc[-1].loc['price']
+
+                sell_for_profit_mark = hist_prices.at[0, 'avgmax_at_buy'] + (hist_prices.at[0, 'avgmax_at_buy']-hist_prices.at[0, 'avgmin_at_buy'])*1.5
+
+                if price > avgmax_last_20_sticks and last_price <= avgmax_last_20_sticks:
+                    for bid in bids:
+                        orders.append(Order(product, bid, order_depth.buy_orders[bid]))
+                    
+                    hist_prices.at[0, 'avgmax_at_buy'] = avgmax_last_20_sticks
+                    hist_prices.at[0, 'avgmin_at_buy'] = avgmin_last_20_sticks
+
+                elif price < avgmin_last_20_sticks and last_price >= avgmax_last_20_sticks:
+                    for ask in asks:
+                        orders.append(Order(product, ask, -order_depth.sell_orders[ask]))
+
+                elif price > sell_for_profit_mark and last_price <= sell_for_profit_mark:
+                    for ask in asks:
+                        orders.append(Order(product, ask, -order_depth.sell_orders[ask]))
 
 
         logger.flush(state, result)
