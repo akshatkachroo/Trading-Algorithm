@@ -3,7 +3,8 @@ from datamodel import OrderDepth, TradingState, Order, ProsperityEncoder, Symbol
 import json
 import pandas as pd
 
-hist_prices = pd.DataFrame(columns=['price', 'candlestick', 'candlestick_max', 'price_at_buy'])
+banana_prices = pd.DataFrame(columns=['price', 'candlestick', 'candlestick_max', 'price_at_buy'])
+coconut_prices = pd.DataFrame(columns=['price'])
 
 class Logger:
     def __init__(self) -> None:
@@ -34,6 +35,7 @@ class Trader:
 
         # Iterate over all the keys (the available products) contained in the order depths
         for product in state.order_depths.keys():
+            print(product)
 
             # Check if the current product is the 'PEARLS' product, only then run the order logic
             if product == 'PEARLS':
@@ -55,7 +57,7 @@ class Trader:
                 result[product] = orders
 
 
-            elif product == 'BANANAS':
+            elif product == 'BANANAS' and state.timestamp > 600:
                 order_depth: OrderDepth = state.order_depths[product]
                 orders: List[Order] = []
 
@@ -65,30 +67,48 @@ class Trader:
                 price = (min(bids) + max(asks))/2
                 
                 candlestick = (state.timestamp/30)+1
-                candlestick_df = hist_prices[hist_prices['candlestick'] == candlestick]
+                candlestick_df = banana_prices[banana_prices['candlestick'] == candlestick]
                 candlestick_max = candlestick_df['price'].max()
 
-                hist_prices.loc[len(hist_prices)] = [price, candlestick, candlestick_max, price]
+                banana_prices.loc[len(banana_prices)] = [price, candlestick, candlestick_max, price]
 
-                hist_prices.loc[hist_prices['candlestick'] == candlestick, 'candlestick_max'] = candlestick_max
+                banana_prices.loc[banana_prices['candlestick'] == candlestick, 'candlestick_max'] = candlestick_max
 
-                avgmax_last_20_sticks = hist_prices.loc[-600:, 'candlestick_max'].mean()
+                avgmax_last_20_sticks = banana_prices.loc[-600:, 'candlestick_max'].mean()
 
-                last_price = hist_prices.iloc[-1].loc['price']
+                last_price = banana_prices.iloc[-1].loc['price']
 
+                print("price:" + price)
+                print("last price:" + last_price)
+                print("avgmax:" + avgmax_last_20_sticks)
+                print("lastbuyprice:" + banana_prices.at[0, 'price_at_buy'])
+                
                 if price > avgmax_last_20_sticks and last_price <= avgmax_last_20_sticks:
                     for bid in bids:
                         orders.append(Order(product, bid, order_depth.buy_orders[bid]))
                     
-                    hist_prices.at[0, 'price_at_buy'] = price
+                    banana_prices.at[0, 'price_at_buy'] = price
 
-                elif price < hist_prices.at[0, 'price_at_buy']*0.99 and last_price >= hist_prices.at[0, 'price_at_buy']*0.99:
+                elif price < banana_prices.at[0, 'price_at_buy']*0.99 and last_price >= banana_prices.at[0, 'price_at_buy']*0.99:
                     for ask in asks:
                         orders.append(Order(product, ask, -order_depth.sell_orders[ask]))
 
-                elif price > hist_prices.at[0, 'price_at_buy']*1.02 and last_price <= hist_prices.at[0, 'price_at_buy']*1.02:
+                elif price > banana_prices.at[0, 'price_at_buy']*1.02 and last_price <= banana_prices.at[0, 'price_at_buy']*1.02:
                     for ask in asks:
                         orders.append(Order(product, ask, -order_depth.sell_orders[ask]))
+            
+
+            elif product == 'COCONUTS':
+            
+                bids = order_depth.buy_orders.keys()
+                asks = order_depth.sell_orders.keys()
+
+                price = (min(bids) + max(asks))/2
+
+                coconut_prices.loc[len(coconut_prices)] = [price]
+
+            #elif product == 'PINA COLADAS':
+
 
 
         logger.flush(state, result)
