@@ -57,7 +57,7 @@ class Trader:
                 result[product] = orders
 
 
-            elif product == 'BANANAS' and state.timestamp > 600:
+            elif product == 'BANANAS':
                 order_depth: OrderDepth = state.order_depths[product]
                 orders: List[Order] = []
 
@@ -76,12 +76,12 @@ class Trader:
 
                 avgmax_last_20_sticks = banana_prices.loc[-600:, 'candlestick_max'].mean()
 
-                last_price = banana_prices.iloc[-1].loc['price']
+                last_price = banana_prices.iloc[-2].loc['price']
 
-                print("price:" + price)
-                print("last price:" + last_price)
-                print("avgmax:" + avgmax_last_20_sticks)
-                print("lastbuyprice:" + banana_prices.at[0, 'price_at_buy'])
+                print("price:", price)
+                print("last price:", last_price)
+                print("avgmax:", avgmax_last_20_sticks)
+                print("lastbuyprice:", banana_prices.at[0, 'price_at_buy'])
                 
                 if price > avgmax_last_20_sticks and last_price <= avgmax_last_20_sticks:
                     for bid in bids:
@@ -96,10 +96,13 @@ class Trader:
                 elif price > banana_prices.at[0, 'price_at_buy']*1.02 and last_price <= banana_prices.at[0, 'price_at_buy']*1.02:
                     for ask in asks:
                         orders.append(Order(product, ask, -order_depth.sell_orders[ask]))
+                
+                result[product] = orders
             
 
             elif product == 'COCONUTS':
-            
+                order_depth: OrderDepth = state.order_depths[product]
+
                 bids = order_depth.buy_orders.keys()
                 asks = order_depth.sell_orders.keys()
 
@@ -107,8 +110,23 @@ class Trader:
 
                 coconut_prices.loc[len(coconut_prices)] = [price]
 
-            #elif product == 'PINA COLADAS':
+            elif product == 'PINA_COLADAS':
+                order_depth: OrderDepth = state.order_depths[product]
+                orders: List[Order] = []
 
+                bids = order_depth.buy_orders.keys()
+                asks = order_depth.sell_orders.keys()
+
+                if len(coconut_prices) > 1:
+                    if coconut_prices.iloc[-1].loc['price'] > coconut_prices.iloc[-2].loc['price']+2:
+                        for bid in bids:
+                            orders.append(Order(product, bid, order_depth.buy_orders[bid]))
+                
+                    elif coconut_prices.iloc[-1].loc['price'] < coconut_prices.iloc[-2].loc['price']-2:
+                        for ask in asks:
+                            orders.append(Order(product, ask, -order_depth.sell_orders[ask]))
+            
+                result[product] = orders
 
 
         logger.flush(state, result)
