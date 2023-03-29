@@ -111,7 +111,7 @@ class Trader:
                 coconut_prices.loc[len(coconut_prices)] = [price]
 
             elif product == 'PINA_COLADAS':
-                order_depth: OrderDepth = state.order_depths[product]
+                order_depth: OrderDepth = state.order_depths[product]   
                 orders: List[Order] = []
 
                 bids = order_depth.buy_orders.keys()
@@ -127,6 +127,10 @@ class Trader:
                             orders.append(Order(product, ask, -order_depth.sell_orders[ask]))
             
                 result[product] = orders
+
+            
+            #elif product == 'MAYBERRIES':
+
 
 
         logger.flush(state, result)
